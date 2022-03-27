@@ -15,7 +15,7 @@ def get_app():
         "REDIS_DNS", "redis://:password@localhost:6379/0"
     )
     container.config.redis_max_connections.from_env("REDIS_MAX_CONNECTIONS", 10)
-    container.wire(modules=[counter])
+    container.wire(modules=[counter, health])
 
     @app.on_event("startup")
     async def startup_event():
