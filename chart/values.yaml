@@ -82,5 +82,5 @@ tolerations: []
 affinity: {}
 
 env:
-  redis:
+  redisDsn:
     secretKey: private_uri
