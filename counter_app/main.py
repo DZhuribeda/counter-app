@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from counter_app import health
 from counter_app import counter
@@ -25,4 +26,10 @@ def get_app():
     def shutdown_event():
         container.shutdown_resources()
 
+
+    @app.on_event("shutdown")
+    def shutdown_event():
+        container.shutdown_resources()
+
+    Instrumentator(should_respect_env_var=True).instrument(app).expose(app)
     return app
