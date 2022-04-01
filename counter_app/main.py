@@ -1,5 +1,13 @@
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
+from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+)
+
 
 from counter_app import health
 from counter_app import counter
@@ -20,16 +28,18 @@ def get_app():
 
     @app.on_event("startup")
     async def startup_event():
-        container.init_resources()
+        await container.init_resources()
 
     @app.on_event("shutdown")
-    def shutdown_event():
-        container.shutdown_resources()
-
-
-    @app.on_event("shutdown")
-    def shutdown_event():
-        container.shutdown_resources()
+    async def shutdown_event():
+        await container.shutdown_resources()
 
     Instrumentator(should_respect_env_var=True).instrument(app).expose(app)
+
+
+    provider = TracerProvider()
+    # processor = BatchSpanProcessor(ConsoleSpanExporter())
+    # provider.add_span_processor(processor)
+    trace.set_tracer_provider(provider)
+    FastAPIInstrumentor().instrument_app(app)
     return app
