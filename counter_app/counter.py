@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from .containers import Container
 from .services import Service
 
-log = structlog.get_logger()
+logger = structlog.get_logger()
 
 router = APIRouter(prefix="/{key}")
 
@@ -14,7 +14,7 @@ router = APIRouter(prefix="/{key}")
 @inject
 async def increment(key: str, service: Service = Depends(Provide[Container.service])):
     value = await service.increment(key)
-    log.msg('Counter incremented', key=key)
+    logger.info('Counter incremented', key=key)
     return {"value": value}
 
 
@@ -22,7 +22,7 @@ async def increment(key: str, service: Service = Depends(Provide[Container.servi
 @inject
 async def reset(key: str, service: Service = Depends(Provide[Container.service])):
     await service.set_value(key, 0)
-    log.msg('Counter reseted', key=key)
+    logger.info('Counter reseted', key=key)
     return {"value": 0}
 
 

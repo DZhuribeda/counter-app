@@ -1,3 +1,5 @@
+import logging
+import sys
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
@@ -12,6 +14,7 @@ from opentelemetry.sdk.trace.export import (
 from counter_app import health
 from counter_app import counter
 from counter_app.containers import Container
+from counter_app.logging import logging_setup
 
 
 def get_app():
@@ -24,6 +27,8 @@ def get_app():
         "REDIS_DNS", "redis://:password@localhost:6379/0"
     )
     container.config.redis_max_connections.from_env("REDIS_MAX_CONNECTIONS", 10)
+    container.config.log_level.from_env("LOG_LEVEL", logging.INFO)
+    container.config.log_json.from_env("LOG_JSON", False)
     container.wire(modules=[counter, health])
 
     @app.on_event("startup")
@@ -42,4 +47,7 @@ def get_app():
     # provider.add_span_processor(processor)
     trace.set_tracer_provider(provider)
     FastAPIInstrumentor().instrument_app(app)
+
+    logging_setup(container.config)
+
     return app
