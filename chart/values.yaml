@@ -84,3 +84,7 @@ affinity: {}
 env:
   redisDsn:
     secretKey: private_uri
+
+servicemonitor:
+  enabled: true
+  labels: {}
