@@ -1,4 +1,5 @@
 import logging
+import sys
 from opentelemetry import trace
 import structlog
 
@@ -7,49 +8,63 @@ def trace_processor(logger, log_method, event_dict):
     current_span = trace.get_current_span()
     if current_span != trace.span.INVALID_SPAN and current_span.is_recording():
         event_dict["trace_id"] = str(current_span.context.trace_id & 0xFFFFFFFFFFFFFFFF)
-        event_dict["span_id"] = str(current_span.context.span_id)
     return event_dict
 
 
 def logging_setup(settings):
     log_level = settings.log_level()
-    timestamper = structlog.processors.TimeStamper(fmt="%Y-%m-%d %H:%M:%S")
-    shared_processors = [
+    processors = [
+        # If log level is too low, abort pipeline and throw away log entry.
+        structlog.stdlib.filter_by_level,
+        # Add the name of the logger to event dict.
+        structlog.stdlib.add_logger_name,
+        # Add log level to event dict.
         structlog.stdlib.add_log_level,
-        timestamper,
+        # Perform %-style formatting.
+        structlog.stdlib.PositionalArgumentsFormatter(),
+        # Add a timestamp in ISO 8601 format.
+        structlog.processors.TimeStamper(fmt="iso"),
+        # If the "stack_info" key in the event dict is true, remove it and
+        # render the current stack trace in the "stack" key.
+        structlog.processors.StackInfoRenderer(),
+        # If the "exc_info" key in the event dict is either true or a
+        # sys.exc_info() tuple, remove "exc_info" and render the exception
+        # with traceback into the "exception" key.
+        structlog.processors.format_exc_info,
+        # If some value is in bytes, decode it to a unicode str.
+        structlog.processors.UnicodeDecoder(),
+        # Add callsite parameters.
+        structlog.processors.CallsiteParameterAdder(
+            (
+                structlog.processors.CallsiteParameter.FILENAME,
+                structlog.processors.CallsiteParameter.FUNC_NAME,
+                structlog.processors.CallsiteParameter.LINENO,
+            )
+        ),
+        trace_processor
     ]
-
-    processors=[
-        trace_processor,
-        # Remove _record & _from_structlog.
-        structlog.stdlib.ProcessorFormatter.remove_processors_meta,
-    ]
-    
     if settings.log_json():
         processors.append(structlog.processors.JSONRenderer())
     else:
-        processors.append(structlog.dev.ConsoleRenderer(),)
-
+        processors.append(structlog.dev.ConsoleRenderer())
 
     structlog.configure(
-        processors=shared_processors +  [
-            structlog.stdlib.ProcessorFormatter.wrap_for_formatter,
-        ],
+        processors=processors,
+        # `wrapper_class` is the bound logger that you get back from
+        # get_logger(). This one imitates the API of `logging.Logger`.
+        wrapper_class=structlog.stdlib.BoundLogger,
+        # `logger_factory` is used to create wrapped loggers that are used for
+        # OUTPUT. This one returns a `logging.Logger`. The final value (a JSON
+        # string) from the final processor (`JSONRenderer`) will be passed to
+        # the method of the same name as that you've called on the bound logger.
         logger_factory=structlog.stdlib.LoggerFactory(),
+        # Effectively freeze configuration after creating the first bound
+        # logger.
         cache_logger_on_first_use=True,
     )
 
-    formatter = structlog.stdlib.ProcessorFormatter(
-        # These run ONLY on `logging` entries that do NOT originate within
-        # structlog.
-        foreign_pre_chain=shared_processors,
-        # These run on ALL entries after the pre_chain is done.
-        processors=processors,
+    logging.basicConfig(
+        format="%(message)s",
+        stream=sys.stdout,
+        level=log_level,
     )
-
-    handler = logging.StreamHandler()
-    # Use OUR `ProcessorFormatter` to format all `logging` entries.
-    handler.setFormatter(formatter)
-    root_logger = logging.getLogger()
-    root_logger.addHandler(handler)
-    root_logger.setLevel(log_level)
