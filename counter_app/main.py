@@ -3,11 +3,10 @@ from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry import trace
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import (
-    BatchSpanProcessor,
-    ConsoleSpanExporter,
-)
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
 
 from counter_app import health, counter, errors
@@ -28,6 +27,9 @@ def get_app():
     container.config.redis_max_connections.from_env("REDIS_MAX_CONNECTIONS", 10)
     container.config.log_level.from_env("LOG_LEVEL", logging.INFO)
     container.config.log_json.from_env("LOG_JSON", False)
+    container.config.agent_hostname.from_env("AGENT_HOSTNAME", None)
+    container.config.agent_port.from_env("AGENT_PORT", "4317")
+
     container.wire(modules=[counter, health])
 
     @app.on_event("startup")
@@ -40,10 +42,18 @@ def get_app():
 
     Instrumentator(should_respect_env_var=True).instrument(app).expose(app)
 
+    resource = Resource(attributes={SERVICE_NAME: "counter-app"})
 
-    provider = TracerProvider()
-    # processor = BatchSpanProcessor(ConsoleSpanExporter())
-    # provider.add_span_processor(processor)
+    provider = TracerProvider(resource=resource)
+    agent_hostname = container.config.agent_hostname()
+    if agent_hostname:
+        otlp_exporter = OTLPSpanExporter(
+            endpoint=f"{agent_hostname}:{container.config.agent_port()}",
+            insecure=True,
+        )
+        processor = BatchSpanProcessor(otlp_exporter)
+        provider.add_span_processor(processor)
+
     trace.set_tracer_provider(provider)
     FastAPIInstrumentor().instrument_app(app)
 
