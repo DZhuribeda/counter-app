@@ -36,6 +36,14 @@ spec:
           env:
           - name: ENABLE_METRICS
             value: "{{ .Values.servicemonitor.enabled }}"
+          - name: LOG_JSON
+            value: '1'
+          {{- if .Values.tracing.enabled }}
+          - name: AGENT_HOSTNAME
+            value: "{{ .Values.tracing.host }}"
+          - name: AGENT_PORT
+            value: "{{ .Values.tracing.port }}"
+          {{- end }}
           - name: REDIS_DNS
             valueFrom:
               secretKeyRef:

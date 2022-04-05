@@ -88,3 +88,8 @@ env:
 servicemonitor:
   enabled: true
   labels: {}
+
+tracing:
+  enabled: false
+  host: ""
+  port: 4317
