@@ -7,7 +7,7 @@ import structlog
 def trace_processor(logger, log_method, event_dict):
     current_span = trace.get_current_span()
     if current_span != trace.span.INVALID_SPAN and current_span.is_recording():
-        event_dict["trace_id"] = str(current_span.context.trace_id & 0xFFFFFFFFFFFFFFFF)
+        event_dict["trace_id"] = trace.format_trace_id(current_span.context.trace_id)
     return event_dict
 
 
