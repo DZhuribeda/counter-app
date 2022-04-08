@@ -18,4 +18,4 @@ RUN pip install --no-cache-dir --upgrade -r /code/requirements.txt
 
 COPY ./counter_app /code/counter_app
 
-CMD ["uvicorn", "counter_app.asgi:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers"]
+CMD ["opentelemetry-instrument", "uvicorn", "counter_app.asgi:app", "--host", "0.0.0.0", "--port", "80", "--proxy-headers"]
