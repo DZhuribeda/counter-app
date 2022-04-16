@@ -1,6 +1,8 @@
 import logging
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
+from opentelemetry.propagate import set_global_textmap
+from opentelemetry.propagators.b3 import B3Format
 
 
 from counter_app import health, counter, errors
@@ -33,7 +35,7 @@ def get_app():
         await container.shutdown_resources()
 
     Instrumentator(should_respect_env_var=True).instrument(app).expose(app)
-
+    set_global_textmap(B3Format())
     logging_setup(container.config)
 
     return app
