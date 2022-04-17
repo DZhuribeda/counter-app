@@ -1,17 +1,37 @@
+{{- if .Values.rollouts.enabled }}
+apiVersion: argoproj.io/v1alpha1               # Create a rollout resource
+kind: Rollout
+{{- else }}
 apiVersion: apps/v1
 kind: Deployment
+{{- end}}
 metadata:
   name: {{ include "chart.fullname" . }}
   labels:
     {{- include "chart.labels" . | nindent 4 }}
 spec:
   {{- if not .Values.autoscaling.enabled }}
-  {{- if .Values.rollouts.enabled }}
-  replicas: 0
-  {{- else}}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
-  {{- end }}
+  {{- if .Values.rollouts.enabled }}
+  strategy:
+    canary:
+      {{- if .Values.istio.enabled }}
+      trafficRouting:
+        istio:
+          virtualService: 
+            name: {{ include "chart.fullname" . }}        # required
+          destinationRule:
+            name: {{ include "chart.fullname" . }}   # required
+            canarySubsetName: canary  # required
+            stableSubsetName: stable  # required
+      {{- end }}
+      
+      {{- with .Values.rollouts.steps }}
+      steps:
+        {{- toYaml . | nindent 6 }}
+      {{- end }}
+  {{- end}}
   selector:
     matchLabels:
       {{- include "chart.selectorLabels" . | nindent 6 }}
