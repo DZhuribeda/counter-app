@@ -16,17 +16,6 @@ spec:
   {{- if .Values.rollouts.enabled }}
   strategy:
     canary:
-      {{- if .Values.istio.enabled }}
-      trafficRouting:
-        istio:
-          virtualService: 
-            name: {{ include "chart.fullname" . }}        # required
-          destinationRule:
-            name: {{ include "chart.fullname" . }}   # required
-            canarySubsetName: canary  # required
-            stableSubsetName: stable  # required
-      {{- end }}
-      
       {{- with .Values.rollouts.steps }}
       steps:
         {{- toYaml . | nindent 6 }}
@@ -68,7 +57,11 @@ spec:
           - name: REDIS_DNS
             valueFrom:
               secretKeyRef:
+                {{if .Values.env.redisDsn.secretName}}
+                name: {{ .Values.env.redisDsn.secretName }}
+                {{- else }}
                 name: {{ include "chart.fullname" . }}-redis-creds
+                {{- end }}
                 key: {{ .Values.env.redisDsn.secretKey }}
                 optional: false
           ports:
