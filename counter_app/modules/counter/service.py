@@ -6,7 +6,7 @@ from counter_app.metric import COUNTER_INCREMENT, COUNTER_RESET, COUNTER_READ
 
 tracer = trace.get_tracer(__name__)
 
-class Service:
+class CounterService:
     def __init__(self, redis: Redis) -> None:
         self._redis = redis
 

@@ -1,6 +1,7 @@
 from dependency_injector import containers, providers
 
-from . import redis, services
+from . import redis
+from counter_app.modules.counter.service import CounterService
 
 
 class Container(containers.DeclarativeContainer):
@@ -13,7 +14,7 @@ class Container(containers.DeclarativeContainer):
         max_connections=config.redis_max_connections,
     )
 
-    service = providers.Factory(
-        services.Service,
+    counter_service = providers.Factory(
+        CounterService,
         redis=redis_pool,
     )
