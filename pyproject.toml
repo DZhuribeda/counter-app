@@ -5,7 +5,7 @@ description = ""
 authors = ["DZhuribeda <zhurbikk@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 fastapi = "^0.75.0"
 uvicorn = "^0.17.6"
 dependency-injector = "^4.38.0"
@@ -25,6 +25,8 @@ opentelemetry-instrumentation-requests = "0.29b0"
 opentelemetry-instrumentation-urllib3 = "0.29b0"
 opentelemetry-exporter-otlp = "^1.10.0"
 opentelemetry-propagator-b3 = "^1.10.0"
+PyJWT = {version = "^2.4.0", extras = ["crypto"]}
+cryptography = "36.0.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"

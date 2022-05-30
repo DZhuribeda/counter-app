@@ -6,3 +6,9 @@ services:
     command: ["redis-server",  "--requirepass", "password"]
     ports:
       - "6379:6379"
+  nginx:
+    image: nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./keys/jwks.json:/usr/share/nginx/html/.well-known/jwks.json

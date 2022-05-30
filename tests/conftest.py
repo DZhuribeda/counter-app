@@ -5,7 +5,11 @@ from counter_app.main import get_app
 
 
 @pytest.fixture
-def client(monkeypatch):
-    monkeypatch.setenv('ENABLE_METRICS', 'false')
-    app = get_app()
+def app(monkeypatch):
+    monkeypatch.setenv("ENABLE_METRICS", "false")
+    return get_app()
+
+
+@pytest.fixture
+def client(app):
     return TestClient(app)

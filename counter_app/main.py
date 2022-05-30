@@ -2,9 +2,10 @@ import logging
 from fastapi import FastAPI
 from prometheus_fastapi_instrumentator import Instrumentator
 from opentelemetry.propagate import set_global_textmap
-from opentelemetry.propagators.b3 import B3Format
+from opentelemetry.propagators.b3 import B3MultiFormat
 
 
+from counter_app.modules.auth import dependencies as auth_dependencies
 from counter_app.modules.health import api as health_api
 from counter_app.modules.counter import api as counter_api
 from counter_app.modules.errors import api as errors_api
@@ -25,8 +26,11 @@ def get_app():
     container.config.redis_max_connections.from_env("REDIS_MAX_CONNECTIONS", 10)
     container.config.log_level.from_env("LOG_LEVEL", logging.INFO)
     container.config.log_json.from_env("LOG_JSON", False)
+    container.config.jwks_url.from_env("JWKS_URL", "http://localhost:8080/.well-known/jwks.json")
+    container.config.jwks_cache_keys.from_env("JWKS_CACHE_KEYS", False)
 
-    container.wire(modules=[counter_api, health_api])
+    container.wire(modules=[counter_api, health_api, auth_dependencies])
+    app.container = container
 
     @app.on_event("startup")
     async def startup_event():
@@ -37,7 +41,7 @@ def get_app():
         await container.shutdown_resources()
 
     Instrumentator(should_respect_env_var=True).instrument(app).expose(app)
-    set_global_textmap(B3Format())
+    set_global_textmap(B3MultiFormat())
     logging_setup(container.config)
 
     return app
