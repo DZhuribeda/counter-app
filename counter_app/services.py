@@ -1,6 +1,7 @@
 from typing import AsyncIterator
 
 import aioredis
+import edgedb
 
 
 async def init_redis_pool(
@@ -10,3 +11,9 @@ async def init_redis_pool(
     redis = aioredis.Redis(connection_pool=pool)
     yield redis
     await redis.close()
+
+
+async def init_edgedb_client() -> AsyncIterator[edgedb.AsyncIOClient]:
+    client = edgedb.create_async_client()
+    yield client
+    await client.close()

@@ -16,7 +16,7 @@ def health():
 @router.get("/readyz")
 @inject
 async def readyz(
-    response: Response, redis: Redis = Depends(Provide[Container.redis_pool])
+    response: Response, redis: Redis = Depends(Provide[Container.gateways.redis_pool])
 ):
     errors = []
     try:

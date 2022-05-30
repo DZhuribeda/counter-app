@@ -35,7 +35,7 @@ def logging_setup(settings):
                 structlog.processors.CallsiteParameter.LINENO,
             )
         ),
-        trace_processor
+        trace_processor,
     ]
     if settings.log_json():
         processors.append(structlog.processors.JSONRenderer())

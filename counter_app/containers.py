@@ -1,30 +1,44 @@
 from dependency_injector import containers, providers
 
+from counter_app.modules.counter.containers import CounterContainer
 
-from . import redis
+
+from . import services
 from counter_app.modules.auth.service import AuthenticationService, JWKClient
-from counter_app.modules.counter.service import CounterService
+
+
+class Gateways(containers.DeclarativeContainer):
+    config = providers.Configuration()
+
+    edgedb_client = providers.Resource(
+        services.init_edgedb_client,
+    )
+
+    redis_pool = providers.Resource(
+        services.init_redis_pool,
+        redis_dsn=config.redis_dsn,
+        max_connections=config.redis_max_connections,
+    )
 
 
 class Container(containers.DeclarativeContainer):
-
     config = providers.Configuration()
 
-    redis_pool = providers.Resource(
-        redis.init_redis_pool,
-        redis_dsn=config.redis_dsn,
-        max_connections=config.redis_max_connections,
+    gateways = providers.Container(
+        Gateways,
+        config=config,
+    )
+
+    counter = providers.Container(
+        CounterContainer,
+        config=config,
+        gateways=gateways,
     )
 
     jwks_client = providers.Singleton(
         JWKClient,
         uri=config.jwks_url,
         cache_keys=config.jwks_cache_keys,
-    )
-
-    counter_service = providers.Factory(
-        CounterService,
-        redis=redis_pool,
     )
 
     authentication_service = providers.Factory(

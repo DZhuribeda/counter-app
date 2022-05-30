@@ -1,31 +1,49 @@
-from aioredis import Redis
+import uuid
 
-from opentelemetry import trace
-from counter_app.metric import COUNTER_INCREMENT, COUNTER_RESET, COUNTER_READ
+import structlog
+from counter_app.modules.counter.model import AccessModeEnum
+from counter_app.modules.counter.repository import CounterRepository
 
+logger = structlog.get_logger()
 
-tracer = trace.get_tracer(__name__)
 
 class CounterService:
-    def __init__(self, redis: Redis) -> None:
-        self._redis = redis
+    def __init__(self, counter_repository: CounterRepository) -> None:
+        self._counter_repository = counter_repository
 
-    async def increment(self, key: str) -> int:
+    async def create(
+        self,
+        name: str,
+        owner_id: str,
+        access_mode: AccessModeEnum,
+        initial_value: int | None = None,
+    ) -> str:
+        counter_id = await self._counter_repository.insert(name, owner_id, access_mode)
+        if initial_value:
+            await self._counter_repository.set_value(counter_id, initial_value)
+        logger.info("Counter created", counter_id=counter_id, counter_name=name)
+        return counter_id
 
-        with tracer.start_as_current_span("redis_incr"):
-            value = await self._redis.incr(key)
-        COUNTER_INCREMENT.labels(counter_name=key).inc()
-        return value
+    async def update(
+        self,
+        counter_id: str,
+        name: str,
+        access_mode: AccessModeEnum,
+    ) -> None:
+        await self._counter_repository.update(counter_id, name, access_mode)
+        logger.info("Counter updated", counter_id=counter_id, counter_name=name)
 
-    async def set_value(self, key: str, value: int = 0) -> None:
-        COUNTER_RESET.labels(counter_name=key).inc()
-        with tracer.start_as_current_span("redis_set"):
-            await self._redis.set(key, value)
+    async def delete(self, counter_id: str) -> None:
+        await self._counter_repository.delete(counter_id)
 
-    async def get_value(self, key: str) -> int:
-        with tracer.start_as_current_span("redis_get"):
-            value = await self._redis.get(key)
-        COUNTER_READ.labels(counter_name=key).inc()
+    async def increment(self, counter_id: str) -> int:
+        return await self._counter_repository.increment(counter_id)
+
+    async def set_value(self, counter_id: str, value: int = 0) -> None:
+        await self._counter_repository.set_value(counter_id, value)
+
+    async def get_value(self, counter_id: str) -> int:
+        value = await self._counter_repository.get_value(counter_id)
         if not value:
             return 0
         return int(value)

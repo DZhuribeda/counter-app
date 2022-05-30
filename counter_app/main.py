@@ -16,7 +16,7 @@ from counter_app.logging import logging_setup
 def get_app():
     app = FastAPI(title="Counter App")
     app.include_router(health_api.router)
-    app.include_router(counter_api.router, prefix="/counter")
+    app.include_router(counter_api.router)
     app.include_router(errors_api.router, prefix="/errors")
 
     container = Container()
@@ -26,7 +26,9 @@ def get_app():
     container.config.redis_max_connections.from_env("REDIS_MAX_CONNECTIONS", 10)
     container.config.log_level.from_env("LOG_LEVEL", logging.INFO)
     container.config.log_json.from_env("LOG_JSON", False)
-    container.config.jwks_url.from_env("JWKS_URL", "http://localhost:8080/.well-known/jwks.json")
+    container.config.jwks_url.from_env(
+        "JWKS_URL", "http://localhost:8080/.well-known/jwks.json"
+    )
     container.config.jwks_cache_keys.from_env("JWKS_CACHE_KEYS", False)
 
     container.wire(modules=[counter_api, health_api, auth_dependencies])
