@@ -8,6 +8,7 @@ class CounterContainer(containers.DeclarativeContainer):
 
     config = providers.Configuration()
     gateways = providers.DependenciesContainer()
+    permissions = providers.DependenciesContainer()
 
     counter_repository = providers.Factory(
         CounterRepository,
@@ -18,4 +19,5 @@ class CounterContainer(containers.DeclarativeContainer):
     counter_service = providers.Factory(
         CounterService,
         counter_repository=counter_repository,
+        permissions_service=permissions.permissions_service,
     )

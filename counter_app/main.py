@@ -6,6 +6,7 @@ from opentelemetry.propagators.b3 import B3MultiFormat
 
 
 from counter_app.modules.auth import dependencies as auth_dependencies
+from counter_app.modules.permissions import dependencies as permissions_dependencies
 from counter_app.modules.health import api as health_api
 from counter_app.modules.counter import api as counter_api
 from counter_app.modules.errors import api as errors_api
@@ -30,8 +31,12 @@ def get_app():
         "JWKS_URL", "http://localhost:8080/.well-known/jwks.json"
     )
     container.config.jwks_cache_keys.from_env("JWKS_CACHE_KEYS", False)
+    container.config.keto_write_url.from_env("KETO_WRITE_URL", "localhost:4467")
+    container.config.keto_read_url.from_env("KETO_READ_URL", "localhost:4466")
 
-    container.wire(modules=[counter_api, health_api, auth_dependencies])
+    container.wire(
+        modules=[counter_api, health_api, auth_dependencies, permissions_dependencies]
+    )
     app.container = container
 
     @app.on_event("startup")

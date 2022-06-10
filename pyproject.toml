@@ -23,12 +23,14 @@ opentelemetry-instrumentation-asgi = "0.29b0"
 opentelemetry-instrumentation-fastapi = "0.29b0"
 opentelemetry-instrumentation-requests = "0.29b0"
 opentelemetry-instrumentation-urllib3 = "0.29b0"
+opentelemetry-instrumentation-grpc = "0.29b0"
 opentelemetry-exporter-otlp = "^1.10.0"
 opentelemetry-propagator-b3 = "^1.10.0"
 PyJWT = {version = "^2.4.0", extras = ["crypto"]}
 cryptography = "36.0.2"
 edgedb = "^0.23.0"
 httpx = "^0.23.0"
+grpcio = "^1.46.3"
 
 [tool.poetry.dev-dependencies]
 pytest = "^7.1.1"
@@ -36,6 +38,7 @@ black = {version = "^22.1.0", allow-prereleases = true}
 requests = "^2.27.1"
 pytest-asyncio = "^0.18.3"
 mypy = "^0.960"
+grpcio-tools = "^1.46.3"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

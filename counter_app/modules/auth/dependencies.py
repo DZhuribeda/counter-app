@@ -17,6 +17,8 @@ async def get_optional_user(
     service: AuthenticationService = Depends(Provide[Container.authentication_service]),
     token: str = Depends(oauth2_scheme),
 ) -> User | None:
+    if not token:
+        return None
     user = service.decode_token(token)
     return user
 

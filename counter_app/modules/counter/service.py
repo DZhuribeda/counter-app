@@ -1,24 +1,33 @@
 import uuid
 
 import structlog
-from counter_app.modules.counter.model import AccessModeEnum
 from counter_app.modules.counter.repository import CounterRepository
+from counter_app.modules.permissions.model import CounterRoles, Entities
+from counter_app.modules.permissions.service import PermissionsService
 
 logger = structlog.get_logger()
 
 
 class CounterService:
-    def __init__(self, counter_repository: CounterRepository) -> None:
+    def __init__(
+        self,
+        counter_repository: CounterRepository,
+        permissions_service: PermissionsService,
+    ) -> None:
         self._counter_repository = counter_repository
+        self._permissions_service = permissions_service
 
     async def create(
         self,
         name: str,
         owner_id: str,
-        access_mode: AccessModeEnum,
         initial_value: int | None = None,
     ) -> str:
-        counter_id = await self._counter_repository.insert(name, owner_id, access_mode)
+        counter_id = await self._counter_repository.insert(name, owner_id)
+        await self._permissions_service.setup_roles(Entities.COUNTER, counter_id)
+        await self._permissions_service.assign_role(
+            Entities.COUNTER, counter_id, CounterRoles.ADMIN, owner_id
+        )
         if initial_value:
             await self._counter_repository.set_value(counter_id, initial_value)
         logger.info("Counter created", counter_id=counter_id, counter_name=name)
@@ -28,12 +37,12 @@ class CounterService:
         self,
         counter_id: str,
         name: str,
-        access_mode: AccessModeEnum,
     ) -> None:
-        await self._counter_repository.update(counter_id, name, access_mode)
+        await self._counter_repository.update(counter_id, name)
         logger.info("Counter updated", counter_id=counter_id, counter_name=name)
 
     async def delete(self, counter_id: str) -> None:
+        # TODO: delete permissions
         await self._counter_repository.delete(counter_id)
 
     async def increment(self, counter_id: str) -> int:

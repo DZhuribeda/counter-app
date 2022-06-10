@@ -10,7 +10,6 @@ module default {
 
   type Counter extending Auditable {
     required property name -> str;
-    required property access_mode -> AccessMode;
     required property owner_id -> str;
   }
 }
