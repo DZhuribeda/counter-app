@@ -147,7 +147,7 @@ async def get_counter_id_value(
 
 @router.post("/counter/{counter_id}/sharing/", status_code=status.HTTP_204_NO_CONTENT)
 @inject
-async def share_counter(
+async def create_sharing_counter(
     counter_id: str,
     share_counter: ShareCounter,
     allowed_permission: bool = CounterEditPermission,
@@ -165,7 +165,7 @@ async def share_counter(
 
 @router.get("/counter/{counter_id}/sharing/")
 @inject
-async def get_shared_users(
+async def get_sharing_users(
     counter_id: str,
     allowed_permission: bool = CounterEditPermission,
     permissions_service: PermissionsService = Depends(
@@ -179,3 +179,20 @@ async def get_shared_users(
     return {
         "data": users_with_roles,
     }
+
+
+@router.delete("/counter/{counter_id}/sharing/{another_user_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@inject
+async def delete_sharing_counter(
+    counter_id: str,
+    another_user_id: str,
+    allowed_permission: bool = CounterEditPermission,
+    permissions_service: PermissionsService = Depends(
+        Provide[Container.permissions.permissions_service]
+    ),
+):
+    await permissions_service.delete_role(
+        Entities.COUNTER,
+        counter_id,
+        another_user_id,
+    )

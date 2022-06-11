@@ -129,3 +129,42 @@ async def test_counter_shared_users(
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert response.status_code == 200, response.json()
+
+
+async def test_deleted_sharing_for_another_user(
+    async_client, counter, token_factory, user_id, another_user_id
+):
+    user_token = token_factory(user_id)
+    another_user_token = token_factory(another_user_id)
+
+    response = await async_client.get(
+        f"/api/v1/counter/{counter}/",
+        headers={"Authorization": f"Bearer {another_user_token}"},
+    )
+    assert response.status_code == 403
+
+    response = await async_client.post(
+        f"/api/v1/counter/{counter}/sharing/",
+        json={"role": CounterRoles.READER.value, "user_id": another_user_id},
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert response.status_code == 204, response.json()
+
+    response = await async_client.get(
+        f"/api/v1/counter/{counter}/",
+        headers={"Authorization": f"Bearer {another_user_token}"},
+    )
+    assert response.status_code == 200
+
+    response = await async_client.delete(
+        f"/api/v1/counter/{counter}/sharing/{another_user_id}/",
+        headers={"Authorization": f"Bearer {user_token}"},
+    )
+    assert response.status_code == 204, response.json()
+
+
+    response = await async_client.get(
+        f"/api/v1/counter/{counter}/",
+        headers={"Authorization": f"Bearer {another_user_token}"},
+    )
+    assert response.status_code == 403

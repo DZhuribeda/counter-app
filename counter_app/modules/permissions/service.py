@@ -1,5 +1,9 @@
 import asyncio
-from counter_app.modules.permissions.model import ENTITY_BASE_ROLE, Entities, ENTITY_PERMISSIONS
+from counter_app.modules.permissions.model import (
+    ENTITY_BASE_ROLE,
+    Entities,
+    ENTITY_PERMISSIONS,
+)
 from counter_app.ory.keto.acl.v1alpha1.expand_service_pb2 import ExpandRequest
 from counter_app.ory.keto.acl.v1alpha1.expand_service_pb2_grpc import ExpandServiceStub
 from counter_app.ory.keto.acl.v1alpha1.read_service_pb2_grpc import ReadServiceStub
@@ -15,8 +19,11 @@ from counter_app.ory.keto.acl.v1alpha1.check_service_pb2 import CheckRequest
 
 class PermissionsService:
     def __init__(
-        self, keto_write_service: WriteServiceStub, keto_check_service: CheckServiceStub,
-        keto_read_service: ReadServiceStub, keto_expand_service: ExpandServiceStub,
+        self,
+        keto_write_service: WriteServiceStub,
+        keto_check_service: CheckServiceStub,
+        keto_read_service: ReadServiceStub,
+        keto_expand_service: ExpandServiceStub,
     ):
         self.keto_write_service = keto_write_service
         self.keto_check_service = keto_check_service
@@ -118,6 +125,25 @@ class PermissionsService:
             )
         await self.persist_tuples(actions)
 
+    async def delete_role(self, entity: Entities, entity_id: str, user_id: str):
+        user_role = await self.get_user_role(entity, entity_id, user_id)
+        if not user_role:
+            return
+        actions = [
+            RelationTupleDelta(
+                action=RelationTupleDelta.Action.DELETE,
+                relation_tuple=RelationTuple(
+                    namespace=f"{entity.value}_roles",
+                    object=f"{entity_id}_{user_role}",
+                    relation="member",
+                    subject=Subject(
+                        id=user_id,
+                    ),
+                ),
+            )
+        ]
+        await self.persist_tuples(actions)
+
     async def check_permission(
         self, entity: Entities, entity_id: str, permission: str, user_id: str
     ):
@@ -133,9 +159,10 @@ class PermissionsService:
         )
         return response.allowed
 
-
     async def get_users_with_access(
-        self, entity: Entities, entity_id: str,
+        self,
+        entity: Entities,
+        entity_id: str,
     ):
         response = await self.keto_expand_service.Expand(
             ExpandRequest(
@@ -153,9 +180,11 @@ class PermissionsService:
         for role_binding in response.tree.children:
             parsed_role = role_binding.subject.set.object.split("_")[-1]
             for user in role_binding.children:
-                user_role.append({
-                    "role": parsed_role,
-                    "user": user.subject.id,
-                })
+                user_role.append(
+                    {
+                        "role": parsed_role,
+                        "user": user.subject.id,
+                    }
+                )
 
         return user_role

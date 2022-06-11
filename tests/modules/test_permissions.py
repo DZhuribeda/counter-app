@@ -6,9 +6,11 @@ from counter_app.modules.permissions.model import (
     CounterPermissions,
 )
 
+
 @pytest.fixture
 def counter_id():
     return uuid4().hex
+
 
 async def test_setup_roles(app, counter_id):
     user_id = "user_id"
@@ -77,4 +79,3 @@ async def test_get_users_with_access(app, counter_id):
         Entities.COUNTER, counter_id
     )
     assert len(users_with_access) == 2
-    
