@@ -2,7 +2,7 @@
 """Client and server classes corresponding to protobuf-defined services."""
 import grpc
 
-from ory.keto.acl.v1alpha1 import (
+from counter_app.ory.keto.acl.v1alpha1 import (
     expand_service_pb2 as ory_dot_keto_dot_acl_dot_v1alpha1_dot_expand__service__pb2,
 )
 

@@ -11,4 +11,6 @@ class PermissionsContainer(containers.DeclarativeContainer):
         PermissionsService,
         keto_write_service=gateways.keto_writer,
         keto_check_service=gateways.keto_check_service,
+        keto_expand_service=gateways.keto_expand_service,
+        keto_read_service=gateways.keto_read_service,
     )

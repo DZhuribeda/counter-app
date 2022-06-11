@@ -161,3 +161,21 @@ async def share_counter(
         share_counter.role.value,
         share_counter.user_id,
     )
+
+
+@router.get("/counter/{counter_id}/sharing/")
+@inject
+async def get_shared_users(
+    counter_id: str,
+    allowed_permission: bool = CounterEditPermission,
+    permissions_service: PermissionsService = Depends(
+        Provide[Container.permissions.permissions_service]
+    ),
+):
+    users_with_roles = await permissions_service.get_users_with_access(
+        Entities.COUNTER,
+        counter_id,
+    )
+    return {
+        "data": users_with_roles,
+    }

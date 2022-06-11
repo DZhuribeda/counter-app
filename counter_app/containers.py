@@ -6,8 +6,9 @@ from counter_app.modules.permissions.containers import PermissionsContainer
 
 from . import services
 from counter_app.modules.auth.service import AuthenticationService, JWKClient
-from counter_app.modules.permissions.service import PermissionsService
 from counter_app.ory.keto.acl.v1alpha1.check_service_pb2_grpc import CheckServiceStub
+from counter_app.ory.keto.acl.v1alpha1.expand_service_pb2_grpc import ExpandServiceStub
+from counter_app.ory.keto.acl.v1alpha1.read_service_pb2_grpc import ReadServiceStub
 
 
 class Gateways(containers.DeclarativeContainer):
@@ -35,6 +36,16 @@ class Gateways(containers.DeclarativeContainer):
 
     keto_check_service = providers.Factory(
         CheckServiceStub,
+        keto_read_channel,
+    )
+
+    keto_read_service = providers.Factory(
+        ReadServiceStub,
+        keto_read_channel,
+    )
+
+    keto_expand_service = providers.Factory(
+        ExpandServiceStub,
         keto_read_channel,
     )
 

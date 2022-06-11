@@ -14,7 +14,7 @@ from google.protobuf import symbol_database as _symbol_database
 _sym_db = _symbol_database.Default()
 
 
-from ory.keto.acl.v1alpha1 import (
+from counter_app.ory.keto.acl.v1alpha1 import (
     acl_pb2 as ory_dot_keto_dot_acl_dot_v1alpha1_dot_acl__pb2,
 )
 

@@ -1,5 +1,8 @@
 import asyncio
-from counter_app.modules.permissions.model import Entities, ENTITY_PERMISSIONS
+from counter_app.modules.permissions.model import ENTITY_BASE_ROLE, Entities, ENTITY_PERMISSIONS
+from counter_app.ory.keto.acl.v1alpha1.expand_service_pb2 import ExpandRequest
+from counter_app.ory.keto.acl.v1alpha1.expand_service_pb2_grpc import ExpandServiceStub
+from counter_app.ory.keto.acl.v1alpha1.read_service_pb2_grpc import ReadServiceStub
 from counter_app.ory.keto.acl.v1alpha1.write_service_pb2 import (
     RelationTupleDelta,
     TransactRelationTuplesRequest,
@@ -12,10 +15,13 @@ from counter_app.ory.keto.acl.v1alpha1.check_service_pb2 import CheckRequest
 
 class PermissionsService:
     def __init__(
-        self, keto_write_service: WriteServiceStub, keto_check_service: CheckServiceStub
+        self, keto_write_service: WriteServiceStub, keto_check_service: CheckServiceStub,
+        keto_read_service: ReadServiceStub, keto_expand_service: ExpandServiceStub,
     ):
         self.keto_write_service = keto_write_service
         self.keto_check_service = keto_check_service
+        self.keto_read_service = keto_read_service
+        self.keto_expand_service = keto_expand_service
 
     def _create_role_permission_action(
         self, entity: Entities, entity_id: str, role: str, permission: str
@@ -126,3 +132,30 @@ class PermissionsService:
             )
         )
         return response.allowed
+
+
+    async def get_users_with_access(
+        self, entity: Entities, entity_id: str,
+    ):
+        response = await self.keto_expand_service.Expand(
+            ExpandRequest(
+                max_depth=3,
+                subject=Subject(
+                    set=SubjectSet(
+                        namespace=entity.value,
+                        object=entity_id,
+                        relation=ENTITY_BASE_ROLE[entity],
+                    )
+                ),
+            )
+        )
+        user_role = []
+        for role_binding in response.tree.children:
+            parsed_role = role_binding.subject.set.object.split("_")[-1]
+            for user in role_binding.children:
+                user_role.append({
+                    "role": parsed_role,
+                    "user": user.subject.id,
+                })
+
+        return user_role
