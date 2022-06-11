@@ -162,7 +162,6 @@ async def test_deleted_sharing_for_another_user(
     )
     assert response.status_code == 204, response.json()
 
-
     response = await async_client.get(
         f"/api/v1/counter/{counter}/",
         headers={"Authorization": f"Bearer {another_user_token}"},

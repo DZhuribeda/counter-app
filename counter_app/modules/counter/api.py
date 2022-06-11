@@ -181,7 +181,10 @@ async def get_sharing_users(
     }
 
 
-@router.delete("/counter/{counter_id}/sharing/{another_user_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    "/counter/{counter_id}/sharing/{another_user_id}/",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 @inject
 async def delete_sharing_counter(
     counter_id: str,

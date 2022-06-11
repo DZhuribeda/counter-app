@@ -49,7 +49,7 @@ class PermissionsService:
             ),
         )
 
-    async def persist_tuples(self, actions: RelationTupleDelta):
+    async def persist_tuples(self, actions: list[RelationTupleDelta]):
         await self.keto_write_service.TransactRelationTuples(
             TransactRelationTuplesRequest(relation_tuple_deltas=actions)
         )
