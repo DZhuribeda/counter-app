@@ -6,9 +6,6 @@ from counter_app.modules.permissions.containers import PermissionsContainer
 
 from . import services
 from counter_app.modules.auth.service import AuthenticationService, JWKClient
-from counter_app.ory.keto.acl.v1alpha1.check_service_pb2_grpc import CheckServiceStub
-from counter_app.ory.keto.acl.v1alpha1.expand_service_pb2_grpc import ExpandServiceStub
-from counter_app.ory.keto.acl.v1alpha1.read_service_pb2_grpc import ReadServiceStub
 
 
 class Gateways(containers.DeclarativeContainer):
@@ -24,29 +21,10 @@ class Gateways(containers.DeclarativeContainer):
         max_connections=config.redis_max_connections,
     )
 
-    keto_writer = providers.Resource(
-        services.init_keto_write_grpc_client,
-        keto_write_url=config.keto_write_url,
-    )
-
-    keto_read_channel = providers.Resource(
-        services.init_keto_read_grpc_channel,
-        keto_read_url=config.keto_read_url,
-    )
-
-    keto_check_service = providers.Factory(
-        CheckServiceStub,
-        keto_read_channel,
-    )
-
-    keto_read_service = providers.Factory(
-        ReadServiceStub,
-        keto_read_channel,
-    )
-
-    keto_expand_service = providers.Factory(
-        ExpandServiceStub,
-        keto_read_channel,
+    spicedb_client = providers.Resource(
+        services.init_spicedb,
+        spicedb_grpc_url=config.spicedb_grpc_url,
+        spicedb_grpc_preshared_key=config.spicedb_grpc_preshared_key,
     )
 
 

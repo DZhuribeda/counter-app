@@ -2,9 +2,8 @@ from typing import AsyncIterator
 
 import aioredis
 import edgedb
-import grpc
-
-from counter_app.ory.keto.acl.v1alpha1.write_service_pb2_grpc import WriteServiceStub
+from authzed.api.v1 import Client
+from grpcutil import insecure_bearer_token_credentials
 
 
 async def init_redis_pool(
@@ -22,15 +21,13 @@ async def init_edgedb_client() -> AsyncIterator[edgedb.AsyncIOClient]:
     await client.close()
 
 
-async def init_keto_write_grpc_client(
-    keto_write_url: str,
-) -> AsyncIterator[WriteServiceStub]:
-    async with grpc.aio.insecure_channel(keto_write_url) as channel:
-        yield WriteServiceStub(channel)
-
-
-async def init_keto_read_grpc_channel(
-    keto_read_url: str,
-) -> AsyncIterator[grpc.aio.Channel]:
-    async with grpc.aio.insecure_channel(keto_read_url) as channel:
-        yield channel
+async def init_spicedb(
+    spicedb_grpc_url: str,
+    spicedb_grpc_preshared_key: str,
+) -> AsyncIterator[Client]:
+    client = Client(
+        spicedb_grpc_url,
+        insecure_bearer_token_credentials(spicedb_grpc_preshared_key),
+    )
+    yield client
+    client.close()

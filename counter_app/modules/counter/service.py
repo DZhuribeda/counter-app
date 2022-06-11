@@ -1,5 +1,3 @@
-import uuid
-
 import structlog
 from counter_app.modules.counter.repository import CounterRepository
 from counter_app.modules.permissions.model import CounterRoles, Entities
@@ -24,7 +22,6 @@ class CounterService:
         initial_value: int | None = None,
     ) -> str:
         counter_id = await self._counter_repository.insert(name, owner_id)
-        await self._permissions_service.setup_roles(Entities.COUNTER, counter_id)
         await self._permissions_service.assign_role(
             Entities.COUNTER, counter_id, CounterRoles.ADMIN, owner_id
         )

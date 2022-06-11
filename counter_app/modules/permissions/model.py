@@ -32,5 +32,5 @@ ENTITY_PERMISSIONS = {
 }
 
 ENTITY_BASE_ROLE = {
-    Entities.COUNTER: CounterPermissions.READ,
+    Entities.COUNTER: CounterRoles.READER,
 }

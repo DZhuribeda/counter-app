@@ -1,0 +1,12 @@
+definition user {}
+
+definition counter {
+  relation reader: user
+  relation writer: user
+  relation admin: user
+
+  permission read = admin + writer + reader
+  permission increment = admin + writer
+  permission edit = admin
+  permission delete = admin
+}

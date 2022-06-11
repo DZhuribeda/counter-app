@@ -9,8 +9,5 @@ class PermissionsContainer(containers.DeclarativeContainer):
 
     permissions_service = providers.Factory(
         PermissionsService,
-        keto_write_service=gateways.keto_writer,
-        keto_check_service=gateways.keto_check_service,
-        keto_expand_service=gateways.keto_expand_service,
-        keto_read_service=gateways.keto_read_service,
+        spicedb_client=gateways.spicedb_client,
     )

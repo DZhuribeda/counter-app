@@ -31,8 +31,10 @@ def get_app():
         "JWKS_URL", "http://localhost:8080/.well-known/jwks.json"
     )
     container.config.jwks_cache_keys.from_env("JWKS_CACHE_KEYS", False)
-    container.config.keto_write_url.from_env("KETO_WRITE_URL", "localhost:4467")
-    container.config.keto_read_url.from_env("KETO_READ_URL", "localhost:4466")
+    container.config.spicedb_grpc_url.from_env("SPICEDB_GRPC_URL", "localhost:50051")
+    container.config.spicedb_grpc_preshared_key.from_env(
+        "SPICEDB_GRPC_PRESHARED_KEY", "somerandomkeyhere"
+    )
 
     container.wire(
         modules=[counter_api, health_api, auth_dependencies, permissions_dependencies]
