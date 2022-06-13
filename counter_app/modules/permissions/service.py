@@ -1,6 +1,5 @@
 import asyncio
 from counter_app.modules.permissions.model import (
-    ENTITY_BASE_ROLE,
     Entities,
     ENTITY_PERMISSIONS,
 )
@@ -17,6 +16,7 @@ from authzed.api.v1 import (
     Consistency,
     ReadRelationshipsRequest,
     RelationshipFilter,
+    LookupResourcesRequest,
 )
 
 
@@ -37,6 +37,7 @@ class PermissionsService:
     ):
         resp = await self.spicedb_client.CheckPermission(
             CheckPermissionRequest(
+                consistency=Consistency(fully_consistent=1),
                 resource=ObjectReference(object_type=entity.value, object_id=entity_id),
                 permission=role,
                 subject=SubjectReference(
@@ -134,6 +135,7 @@ class PermissionsService:
     ):
         resp = await self.spicedb_client.CheckPermission(
             CheckPermissionRequest(
+                consistency=Consistency(fully_consistent=1),
                 resource=ObjectReference(object_type=entity.value, object_id=entity_id),
                 permission=permission,
                 subject=SubjectReference(
@@ -145,8 +147,7 @@ class PermissionsService:
             )
         )
         return (
-            resp.permissionship
-            == CheckPermissionResponse.PERMISSIONSHIP_HAS_PERMISSION,
+            resp.permissionship == CheckPermissionResponse.PERMISSIONSHIP_HAS_PERMISSION
         )
 
     async def get_users_with_access(
@@ -172,3 +173,26 @@ class PermissionsService:
             )
 
         return user_role
+
+    async def get_user_object_ids_permission(
+        self,
+        entity: Entities,
+        user_id: str,
+        permission: str,
+    ):
+        object_ids = []
+        async for resp in self.spicedb_client.LookupResources(
+            LookupResourcesRequest(
+                consistency=Consistency(fully_consistent=1),
+                resource_object_type=entity.value,
+                permission=permission,
+                subject=SubjectReference(
+                    object=ObjectReference(
+                        object_type="user",
+                        object_id=user_id,
+                    )
+                ),
+            )
+        ):
+            object_ids.append(resp.resource_object_id)
+        return object_ids

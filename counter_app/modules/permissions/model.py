@@ -30,7 +30,3 @@ ENTITY_PERMISSIONS = {
         ],
     },
 }
-
-ENTITY_BASE_ROLE = {
-    Entities.COUNTER: CounterRoles.READER,
-}

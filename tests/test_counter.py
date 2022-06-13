@@ -29,14 +29,27 @@ async def counter(counter_factory, counter_name):
 
 @pytest.mark.usefixtures("authorized_user")
 def test_counter_create(client):
-    response = client.post("/api/v1/counter/", json={"name": "test"})
+    response = client.post("/api/v1/counters/", json={"name": "test"})
     assert response.status_code == 307
-    assert response.headers.get("location").startswith("/api/v1/counter/")
+    assert response.headers.get("location").startswith("/api/v1/counters/")
+
+
+@pytest.mark.usefixtures("authorized_user")
+async def test_counter_get_list(async_client, counter):
+    response = await async_client.get(f"/api/v1/counters/")
+    assert response.status_code == 200, response.json()
+    data = response.json()
+    assert len(data["data"]) == 1
+    fetched_counter = data["data"][0]
+    assert fetched_counter["id"] == str(counter)
+    assert fetched_counter["role"] == "admin"
+    for key in ["ownerId", "name", "createdAt", "role"]:
+        assert key in fetched_counter
 
 
 @pytest.mark.usefixtures("authorized_user")
 async def test_counter_get(async_client, counter):
-    response = await async_client.get(f"/api/v1/counter/{counter}/")
+    response = await async_client.get(f"/api/v1/counters/{counter}/")
     assert response.status_code == 200
     data = response.json()
     assert data["id"] == str(counter)
@@ -44,17 +57,16 @@ async def test_counter_get(async_client, counter):
     for key in ["ownerId", "name", "createdAt", "role"]:
         assert key in data
 
-
 @pytest.mark.usefixtures("authorized_user")
 async def test_counter_delete(async_client, counter):
-    response = await async_client.delete(f"/api/v1/counter/{counter}/")
+    response = await async_client.delete(f"/api/v1/counters/{counter}/")
     assert response.status_code == 204
 
 
 @pytest.mark.usefixtures("authorized_user")
 async def test_counter_put(async_client, counter):
     response = await async_client.put(
-        f"/api/v1/counter/{counter}/", json={"name": "testing"}
+        f"/api/v1/counters/{counter}/", json={"name": "testing"}
     )
     assert response.status_code == 204
 
@@ -82,7 +94,7 @@ async def test_counter_value_get(async_client, counter):
 
 @pytest.mark.usefixtures("another_authorized_user")
 async def test_counter_unauthorized_for_another_user(async_client, counter):
-    response = await async_client.get(f"/api/v1/counter/{counter}/")
+    response = await async_client.get(f"/api/v1/counters/{counter}/")
     assert response.status_code == 403
 
 
@@ -93,23 +105,31 @@ async def test_counter_shared_for_another_user(
     another_user_token = token_factory(another_user_id)
 
     response = await async_client.get(
-        f"/api/v1/counter/{counter}/",
+        f"/api/v1/counters/{counter}/",
         headers={"Authorization": f"Bearer {another_user_token}"},
     )
     assert response.status_code == 403
 
     response = await async_client.post(
-        f"/api/v1/counter/{counter}/sharing/",
+        f"/api/v1/counters/{counter}/sharing/",
         json={"role": CounterRoles.READER.value, "user_id": another_user_id},
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert response.status_code == 204, response.json()
 
     response = await async_client.get(
-        f"/api/v1/counter/{counter}/",
+        f"/api/v1/counters/{counter}/",
         headers={"Authorization": f"Bearer {another_user_token}"},
     )
     assert response.status_code == 200
+
+    response = await async_client.get(
+        f"/api/v1/counters/",
+        headers={"Authorization": f"Bearer {another_user_token}"},
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["data"]) == 1
 
 
 async def test_counter_shared_users(
@@ -118,14 +138,14 @@ async def test_counter_shared_users(
     user_token = token_factory(user_id)
 
     response = await async_client.post(
-        f"/api/v1/counter/{counter}/sharing/",
+        f"/api/v1/counters/{counter}/sharing/",
         json={"role": CounterRoles.READER.value, "user_id": another_user_id},
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert response.status_code == 204, response.json()
 
     response = await async_client.get(
-        f"/api/v1/counter/{counter}/sharing/",
+        f"/api/v1/counters/{counter}/sharing/",
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert response.status_code == 200, response.json()
@@ -138,32 +158,32 @@ async def test_deleted_sharing_for_another_user(
     another_user_token = token_factory(another_user_id)
 
     response = await async_client.get(
-        f"/api/v1/counter/{counter}/",
+        f"/api/v1/counters/{counter}/",
         headers={"Authorization": f"Bearer {another_user_token}"},
     )
     assert response.status_code == 403
 
     response = await async_client.post(
-        f"/api/v1/counter/{counter}/sharing/",
+        f"/api/v1/counters/{counter}/sharing/",
         json={"role": CounterRoles.READER.value, "user_id": another_user_id},
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert response.status_code == 204, response.json()
 
     response = await async_client.get(
-        f"/api/v1/counter/{counter}/",
+        f"/api/v1/counters/{counter}/",
         headers={"Authorization": f"Bearer {another_user_token}"},
     )
     assert response.status_code == 200
 
     response = await async_client.delete(
-        f"/api/v1/counter/{counter}/sharing/{another_user_id}/",
+        f"/api/v1/counters/{counter}/sharing/{another_user_id}/",
         headers={"Authorization": f"Bearer {user_token}"},
     )
     assert response.status_code == 204, response.json()
 
     response = await async_client.get(
-        f"/api/v1/counter/{counter}/",
+        f"/api/v1/counters/{counter}/",
         headers={"Authorization": f"Bearer {another_user_token}"},
     )
     assert response.status_code == 403

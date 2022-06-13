@@ -1,4 +1,5 @@
 from unittest.mock import Mock
+from uuid import uuid4
 from httpx import AsyncClient
 import pytest
 from fastapi.testclient import TestClient
@@ -61,12 +62,12 @@ def token_factory():
 
 @pytest.fixture
 def user_id():
-    return "user_id"
+    return uuid4().hex
 
 
 @pytest.fixture
 def another_user_id():
-    return "another_user_id"
+    return uuid4().hex
 
 
 @pytest.fixture

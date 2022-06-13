@@ -1,3 +1,4 @@
+import asyncio
 from edgedb import AsyncIOClient
 from pydantic import BaseModel
 import structlog
@@ -15,7 +16,11 @@ from counter_app.modules.permissions.dependencies import (
     CounterReadPermission,
     CounterIncrementPermission,
 )
-from counter_app.modules.permissions.model import CounterRoles, Entities
+from counter_app.modules.permissions.model import (
+    CounterPermissions,
+    CounterRoles,
+    Entities,
+)
 from counter_app.modules.permissions.service import PermissionsService
 from .service import CounterService
 
@@ -38,7 +43,7 @@ class ShareCounter(BaseModel):
     role: CounterRoles
 
 
-@router.post("/counter/")
+@router.post("/counters/")
 @inject
 async def create(
     counter: CreateCounter,
@@ -53,7 +58,49 @@ async def create(
     return RedirectResponse(router.url_path_for("get", counter_id=counter_id))
 
 
-@router.put("/counter/{counter_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@router.get("/counters/")
+@inject
+async def get_list(
+    edgedb_client: AsyncIOClient = Depends(Provide[Container.gateways.edgedb_client]),
+    current_user: User = Depends(get_required_user),
+    permissions_service: PermissionsService = Depends(
+        Provide[Container.permissions.permissions_service]
+    ),
+):
+    counter_ids = await permissions_service.get_user_object_ids_permission(
+        Entities.COUNTER,
+        current_user.id,
+        CounterPermissions.READ,
+    )
+    counters = await edgedb_client.query(
+        """
+        SELECT Counter {id, name, created_at, owner_id} FILTER .id IN array_unpack(<array<uuid>>$counter_ids)
+    """,
+        counter_ids=counter_ids,
+    )
+    role_tasks = []
+    for counter in counters:
+        role_tasks.append(
+            permissions_service.get_user_role(
+                Entities.COUNTER, str(counter.id), current_user.id
+            )
+        )
+    roles = await asyncio.gather(*role_tasks)
+    return {
+        "data": [
+            {
+                "id": counter.id,
+                "name": counter.name,
+                "createdAt": counter.created_at,
+                "ownerId": counter.owner_id,
+                "role": role,
+            }
+            for counter, role in zip(counters, roles)
+        ]
+    }
+
+
+@router.put("/counters/{counter_id}/", status_code=status.HTTP_204_NO_CONTENT)
 @inject
 async def update(
     counter: Counter,
@@ -67,7 +114,7 @@ async def update(
     )
 
 
-@router.get("/counter/{counter_id}/")
+@router.get("/counters/{counter_id}/")
 @inject
 async def get(
     counter_id: str,
@@ -78,7 +125,6 @@ async def get(
         Provide[Container.permissions.permissions_service]
     ),
 ):
-    # TODO: add user role
     counter = await edgedb_client.query_single(
         """
         SELECT Counter {id, name, created_at, owner_id} FILTER .id = <uuid>$id
@@ -97,7 +143,7 @@ async def get(
     }
 
 
-@router.delete("/counter/{counter_id}/", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/counters/{counter_id}/", status_code=status.HTTP_204_NO_CONTENT)
 @inject
 async def delete(
     counter_id: str,
@@ -145,7 +191,7 @@ async def get_counter_id_value(
     return {"value": value}
 
 
-@router.post("/counter/{counter_id}/sharing/", status_code=status.HTTP_204_NO_CONTENT)
+@router.post("/counters/{counter_id}/sharing/", status_code=status.HTTP_204_NO_CONTENT)
 @inject
 async def create_sharing_counter(
     counter_id: str,
@@ -163,7 +209,7 @@ async def create_sharing_counter(
     )
 
 
-@router.get("/counter/{counter_id}/sharing/")
+@router.get("/counters/{counter_id}/sharing/")
 @inject
 async def get_sharing_users(
     counter_id: str,
@@ -182,7 +228,7 @@ async def get_sharing_users(
 
 
 @router.delete(
-    "/counter/{counter_id}/sharing/{another_user_id}/",
+    "/counters/{counter_id}/sharing/{another_user_id}/",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 @inject
